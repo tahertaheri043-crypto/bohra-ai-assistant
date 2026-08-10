@@ -224,7 +224,6 @@
 
         if (!query) return;
 
-        // Greetings
         if (["hi", "hello", "salaam", "hey", "ya ali madad"].some(g => query.includes(g))) {
             feedEl.innerHTML = `
                 <div class="ai-card">
@@ -235,7 +234,6 @@
             return;
         }
 
-        // Database Search
         let matched = database.find(item => item.keywords.some(k => query.includes(k)));
 
         if (matched) {
