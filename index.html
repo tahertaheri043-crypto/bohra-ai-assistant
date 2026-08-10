@@ -162,7 +162,7 @@
 <script>
     const database = [
         {
-            keywords: ["wudu", "water", "clean", "pure", "ma' mutlaq"],
+            keywords: ["wudu", "water", "clean", "pure", "ma' mutlaq", "sequence", "how to"],
             category: "Namaz & Tahaarat",
             answer: "• Wudu must be performed using clean, pure water (Ma' Mutlaq). Water mixed with other substances or impure water cannot be used.\n\n• Sequence for Wudu: 1. Niyyat, 2. Wash hands to wrists, 3. Rinse mouth 3 times (Kulli), 4. Rinse nose 3 times (Istinshaq), 5. Wash face forehead to chin, 6. Wash both arms up to elbows, 7. Masah over head with wet hands, 8. Masah over feet to ankles."
         },
@@ -224,7 +224,7 @@
 
         if (!query) return;
 
-        // Greeting check
+        // Greetings
         if (["hi", "hello", "salaam", "hey", "ya ali madad"].some(g => query.includes(g))) {
             feedEl.innerHTML = `
                 <div class="ai-card">
@@ -235,7 +235,7 @@
             return;
         }
 
-        // Search database
+        // Database Search
         let matched = database.find(item => item.keywords.some(k => query.includes(k)));
 
         if (matched) {
