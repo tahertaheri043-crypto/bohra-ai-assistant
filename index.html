@@ -92,11 +92,6 @@
             font-weight: 600;
         }
 
-        .btn-search:disabled {
-            background: #94A3B8;
-            cursor: not-allowed;
-        }
-
         .feed {
             padding: 20px;
             min-height: 300px;
@@ -128,13 +123,6 @@
             white-space: pre-line;
         }
 
-        .loading-state {
-            text-align: center;
-            padding: 30px;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
         .app-footer {
             text-align: center;
             padding: 15px;
@@ -155,7 +143,7 @@
     <div class="search-container">
         <div class="search-box">
             <input type="text" id="userInput" class="search-input" placeholder="Say hi or ask a question..." onkeypress="handleKeyPress(event)">
-            <button id="askBtn" class="btn-search" onclick="askAI()">Ask AI</button>
+            <button id="askBtn" class="btn-search" onclick="processQuery()">Ask AI</button>
         </div>
     </div>
 
@@ -172,112 +160,99 @@
 </div>
 
 <script>
-    const GEMINI_API_KEY = "AQ.Ab8RN6LKFnWcjrn4EuaFk01fQb1gSkJd0V0IFLj-kWWpqfK67A";
-
-    const knowledgeBaseText = `
-    [CATEGORY: Namaz & Tahaarat]
-    - Wudu must be performed using clean, pure water (Ma' Mutlaq). Water mixed with other substances or impure water cannot be used.
-    - Sequence for Wudu: 1. Niyyat, 2. Wash hands to wrists, 3. Rinse mouth 3 times (Kulli), 4. Rinse nose 3 times (Istinshaq), 5. Wash face forehead to chin, 6. Wash both arms up to elbows, 7. Masah over head with wet hands, 8. Masah over feet to ankles.
-    - Wudu is invalidated by natural bodily discharges, deep sleep where full consciousness/awareness is lost, loss of consciousness/fainting, or states requiring Ghusl. Minor blood drops or touching dry clean surfaces do not break Wudu.
-    - Clothing for Namaz must be Paak (pure/clean from Najāsat). Men require Libas-ul-Anwar (Saya Kurta & Topi); Women require Paak Rida. Place of Sujood must be pure.
-    - Faraz Namaz must be prayed within its designated timeframe (Waqt). If missed outside valid timeframe, it must be performed as Qadaa along with Istighfar.
-
-    [CATEGORY: Calendar & Miqaats]
-    - Fatemi (Misri) calendar is a fixed, mathematically computed lunar calendar. It does not depend on physical moon sightings. Months alternate between 30 and 29 days.
-    - On Pehli Raat (first night), recite prescribed Suras and special Duas after Maghrib/Isha Namaz, make special Niyyat for holy months, and observe general protocols with purity.
-    - Ayyaam al-Beed are the 13th, 14th, and 15th days of every lunar month. Recommended to observe Roza (fasting) and engage in Ibadat and Quran recitation.
-    - Major Miqaat preparation: Achieve physical Tahaarat (Ghusl if recommended), wear Libas-ul-Anwar, review historical context, attend collective community events.
-    - Yawm an-Nass (18th Zilhaj) marks when Rasulullah declared Maulana Ali as Mawla of Mumineen, establishing the divine line of Imamat. Observances include special duas, bay'at, and Shukr.
-
-    [CATEGORY: Adab & Etiquette]
-    - Libas-ul-Anwar consists of Saya, Kurta, and Topi for men; Paak Rida for women. Must be clean and well-maintained.
-    - Shared Thaāl (Mawaid) Adab: Wash hands thoroughly before eating, wait for Thaāl to open, eat using fingers of right hand, eat from your side of the plate, take small bites.
-    - Food waste (Israaf) must be avoided. Leftovers of Paak food should be gathered carefully and not carelessly discarded.
-    - Addressing elders/Aamil Sahebs: Show Ihtiraam, stand up to receive them, use polite greetings ("Salaam, Saheb" / "Ya Ali Madad"), speak softly without interrupting.
-    - Masjid/Markaz decorum: Arrive early in full Tahaarat, observe silence, adhere to designated seating, avoid disturbing others in Ibadat.
-    `;
-
-    const systemPrompt = `You are a warm, polite, intelligent, and natural AI collaborator.
-
-    HOW YOU MUST RESPOND:
-    1. CONVERSATION & GREETINGS:
-       - If the user greets you ("hi", "hello", "salaam", "hey"), greet them back warmly, introduce yourself, and invite them to ask a question.
-       - If they ask general questions like "who are you?", "what can you do?", or "how are you?", talk to them naturally and conversationally.
-    
-    2. RELIGIOUS RULINGS & FIQH:
-       - When asked about Fiqh, Namaz, Wudu, Calendar, or Adab, explain the ruling clearly and naturally using ONLY the verified database instructions provided below.
-    
-    3. SAFETY FALLBACK FOR UNKNOWN RULINGS:
-       - If a specific religious question is NOT covered in the database, respond politely:
-         "This specific mas'ala is not available in my verified database. Please consult authentic Jamia/Dawat literature or ask a local Aamil Saheb."`;
+    const database = [
+        {
+            keywords: ["wudu", "water", "clean", "pure", "ma' mutlaq"],
+            category: "Namaz & Tahaarat",
+            answer: "• Wudu must be performed using clean, pure water (Ma' Mutlaq). Water mixed with other substances or impure water cannot be used.\n\n• Sequence for Wudu: 1. Niyyat, 2. Wash hands to wrists, 3. Rinse mouth 3 times (Kulli), 4. Rinse nose 3 times (Istinshaq), 5. Wash face forehead to chin, 6. Wash both arms up to elbows, 7. Masah over head with wet hands, 8. Masah over feet to ankles."
+        },
+        {
+            keywords: ["break", "invalid", "sleep", "blood", "discharges"],
+            category: "Namaz & Tahaarat",
+            answer: "• Wudu is invalidated by natural bodily discharges, deep sleep where full consciousness is lost, loss of consciousness, or states requiring Ghusl.\n\n• Minor blood drops or touching dry clean surfaces do not break Wudu."
+        },
+        {
+            keywords: ["namaz", "clothes", "clothing", "libas", "rida", "topi", "sujood"],
+            category: "Namaz & Tahaarat",
+            answer: "• Clothing for Namaz must be Paak (pure/clean from Najāsat).\n• Men require Libas-ul-Anwar (Saya Kurta & Topi); Women require Paak Rida.\n• The place of Sujood must be completely pure."
+        },
+        {
+            keywords: ["missed", "qadaa", "waqt", "timeframe"],
+            category: "Namaz & Tahaarat",
+            answer: "• Faraz Namaz must be prayed within its designated timeframe (Waqt).\n• If missed outside the valid timeframe, it must be performed as Qadaa along with Istighfar."
+        },
+        {
+            keywords: ["calendar", "misri", "fatemi", "lunar", "moon"],
+            category: "Calendar & Miqaats",
+            answer: "• The Fatemi (Misri) calendar is a fixed, mathematically computed lunar calendar.\n• It does not depend on physical moon sightings. Months alternate between 30 and 29 days."
+        },
+        {
+            keywords: ["pehli raat", "first night"],
+            category: "Calendar & Miqaats",
+            answer: "• On Pehli Raat (first night), recite prescribed Suras and special Duas after Maghrib/Isha Namaz, make special Niyyat for holy months, and observe general protocols with purity."
+        },
+        {
+            keywords: ["beed", "ayyaam", "13th", "14th", "15th", "fasting", "roza"],
+            category: "Calendar & Miqaats",
+            answer: "• Ayyaam al-Beed are the 13th, 14th, and 15th days of every lunar month.\n• It is recommended to observe Roza (fasting) and engage in Ibadat and Quran recitation."
+        },
+        {
+            keywords: ["nass", "yawm", "zilhaj", "18th"],
+            category: "Calendar & Miqaats",
+            answer: "• Yawm an-Nass (18th Zilhaj) marks when Rasulullah declared Maulana Ali as Mawla of Mumineen, establishing the divine line of Imamat.\n• Observances include special duas, bay'at, and Shukr."
+        },
+        {
+            keywords: ["thaal", "food", "eating", "mawaid", "waste", "israaf"],
+            category: "Adab & Etiquette",
+            answer: "• Shared Thaāl Adab: Wash hands thoroughly before eating, wait for Thaāl to open, eat using fingers of right hand, eat from your side of the plate, and take small bites.\n• Food waste (Israaf) must be avoided completely."
+        },
+        {
+            keywords: ["aamil", "saheb", "elder", "respect", "ihtiraam", "masjid"],
+            category: "Adab & Etiquette",
+            answer: "• Addressing elders/Aamil Sahebs: Show Ihtiraam, stand up to receive them, use polite greetings ('Salaam, Saheb' / 'Ya Ali Madad'), and speak softly without interrupting.\n• Masjid decorum: Arrive early in full Tahaarat, observe silence, and adhere to designated seating."
+        }
+    ];
 
     function handleKeyPress(e) {
-        if (e.key === 'Enter') askAI();
+        if (e.key === 'Enter') processQuery();
     }
 
-    async function askAI() {
+    function processQuery() {
         const inputEl = document.getElementById('userInput');
         const feedEl = document.getElementById('feedContainer');
-        const btnEl = document.getElementById('askBtn');
-        const query = inputEl.value.trim();
+        const query = inputEl.value.trim().toLowerCase();
 
         if (!query) return;
 
-        btnEl.disabled = true;
-        feedEl.innerHTML = `<div class="loading-state"><p>AI is thinking...</p></div>`;
-
-        // Sequential fallback list across v1beta and v1 endpoints
-        const endpointsToTry = [
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
-        ];
-
-        let aiResponseText = null;
-        let lastError = null;
-
-        for (const url of endpointsToTry) {
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{ text: `${systemPrompt}\n\n[VERIFIED DATABASE]:\n${knowledgeBaseText}\n\n[USER QUESTION]:\n${query}` }]
-                        }]
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.candidates && data.candidates[0] && data.candidates[0].content.parts[0].text) {
-                    aiResponseText = data.candidates[0].content.parts[0].text;
-                    break;
-                } else if (data.error) {
-                    lastError = data.error.message;
-                }
-            } catch (err) {
-                lastError = err.message;
-            }
-        }
-
-        if (aiResponseText) {
+        // Greeting check
+        if (["hi", "hello", "salaam", "hey", "ya ali madad"].some(g => query.includes(g))) {
             feedEl.innerHTML = `
                 <div class="ai-card">
-                    <div class="ai-card-tag">AI Response</div>
-                    <div class="ai-card-body">${aiResponseText}</div>
+                    <div class="ai-card-tag">AI Assistant</div>
+                    <div class="ai-card-body">Salaam! I am your AI Guidance Assistant. I am grounded in verified Fatemi Fiqh and Ahkaam. How can I help you today with Namaz, Wudu, Calendar, or Adab?</div>
+                </div>
+            `;
+            return;
+        }
+
+        // Search database
+        let matched = database.find(item => item.keywords.some(k => query.includes(k)));
+
+        if (matched) {
+            feedEl.innerHTML = `
+                <div class="ai-card">
+                    <div class="ai-card-tag">${matched.category}</div>
+                    <div class="ai-card-body">${matched.answer}</div>
                 </div>
             `;
         } else {
             feedEl.innerHTML = `
                 <div class="ai-card">
-                    <div class="ai-card-tag" style="color:red;">Error</div>
-                    <div class="ai-card-body">${lastError || "Could not retrieve AI response."}</div>
+                    <div class="ai-card-tag" style="color:var(--gold-accent);">Notice</div>
+                    <div class="ai-card-body">This specific mas'ala is not available in my verified database. Please consult authentic Jamia/Dawat literature or ask a local Aamil Saheb.</div>
                 </div>
             `;
         }
-
-        btnEl.disabled = false;
     }
 </script>
 
